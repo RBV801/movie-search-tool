@@ -3,6 +3,14 @@
 <head>
   <title>Movie Search Tool</title>
   <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input { padding: 8px; margin-right: 10px; }
+    button { padding: 8px 16px; }
+    .movie-list { margin-top: 20px; }
+    .movie-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+    .cast-list { margin-top: 10px; }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -10,18 +18,28 @@
     <movie-search-agent :results="searchResults"></movie-search-agent>
   </div>
 
+  <script src="../movie-scraper.js"></script>
   <script src="movie-search-ui.js"></script>
   <script src="movie-search-agent.js"></script>
   <script>
+    // Initialize the movie scraper
+    const scraper = new MovieScraper();
+
     new Vue({
       el: '#app',
       data: {
         searchResults: []
       },
       methods: {
-        performSearch(query) {
-          // TODO: Implement actual search logic
-          console.log('Searching for:', query);
+        async performSearch(query) {
+          try {
+            console.log('Searching for:', query);
+            const results = await scraper.searchMovie(query);
+            this.searchResults = results;
+          } catch (error) {
+            console.error('Search failed:', error);
+            alert('Search failed. Please try again.');
+          }
         }
       }
     });
