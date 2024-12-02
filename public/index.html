@@ -1,61 +1,65 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Movie Search Tool</title>
-  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14"></script>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input { padding: 8px; margin-right: 10px; }
-    button { padding: 8px 16px; }
-    .movie-list { margin-top: 20px; }
-    .movie-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
-    .cast-list { margin-top: 10px; }
-    .error { color: red; margin: 10px 0; }
-  </style>
+    <meta charset="UTF-8">
+    <title>Movie Search Agent</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        input { padding: 8px; margin-right: 10px; width: 300px; }
+        button { padding: 8px 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        button:hover { background: #45a049; }
+        .movie-list { margin-top: 20px; }
+        .movie-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+        .cast-list { margin-top: 10px; }
+        .error { color: red; margin: 10px 0; padding: 10px; background: #ffebee; border-radius: 4px; }
+    </style>
 </head>
 <body>
-  <div id="app">
-    <div v-if="error" class="error">{{ error }}</div>
-    <movie-search-ui @search="performSearch"></movie-search-ui>
-    <movie-search-agent :results="searchResults"></movie-search-agent>
-  </div>
+    <div id="app" class="container">
+        <h1>Movie Search Tool</h1>
+        <div v-if="error" class="error">{{ error }}</div>
+        <movie-search-ui @search="performSearch"></movie-search-ui>
+        <movie-search-agent :results="searchResults"></movie-search-agent>
+    </div>
 
-  <script src="config.js"></script>
-  <script src="movie-scraper.js"></script>
-  <script src="movie-search-ui.js"></script>
-  <script src="movie-search-agent.js"></script>
-  <script>
-    // Initialize the movie scraper
-    let scraper;
-    try {
-      scraper = new MovieScraper();
-    } catch (error) {
-      console.error('Failed to initialize MovieScraper:', error);
-    }
-
-    new Vue({
-      el: '#app',
-      data: {
-        searchResults: [],
-        error: ''
-      },
-      methods: {
-        async performSearch(query) {
-          this.error = '';
-          try {
-            if (!scraper) {
-              throw new Error('Movie scraper not initialized. Please check your configuration.');
-            }
-            console.log('Searching for:', query);
-            const results = await scraper.searchMovie(query);
-            this.searchResults = results;
-          } catch (error) {
-            console.error('Search failed:', error);
-            this.error = `Search failed: ${error.message}`;
-          }
+    <script src="config.js"></script>
+    <script src="movie-scraper.js"></script>
+    <script src="movie-search-ui.js"></script>
+    <script src="movie-search-agent.js"></script>
+    <script>
+        // Initialize the movie scraper
+        let scraper;
+        try {
+            scraper = new MovieScraper();
+        } catch (error) {
+            console.error('Failed to initialize MovieScraper:', error);
         }
-      }
-    });
-  </script>
+
+        new Vue({
+            el: '#app',
+            data: {
+                searchResults: [],
+                error: ''
+            },
+            methods: {
+                async performSearch(query) {
+                    this.error = '';
+                    try {
+                        if (!scraper) {
+                            throw new Error('Movie scraper not initialized. Please check your configuration.');
+                        }
+                        console.log('Searching for:', query);
+                        const results = await scraper.searchMovie(query);
+                        this.searchResults = results;
+                    } catch (error) {
+                        console.error('Search failed:', error);
+                        this.error = `Search failed: ${error.message}`;
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
