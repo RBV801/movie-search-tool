@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Search Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.45/vue.global.min.js"></script>
+</head>
+<body>
+<div id="app" class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Movie Search Agent</h1>
+    
+    <div class="flex space-x-4 mb-4">
+        <input 
+            v-model="searchQuery" 
+            @keyup.enter="search"
+            placeholder="Search movies..." 
+            class="flex-grow p-2 border rounded"
+        >
+        <select v-model="searchType" class="p-2 border rounded">
+            <option value="all">All Fields</option>
+            <option value="title">Title</option>
+            <option value="genre">Genre</option>
+            <option value="director">Director</option>
+        </select>
+        <button 
+            @click="search" 
+            class="bg-blue-500 text-white p-2 rounded"
+        >
+            Search
+        </button>
+    </div>
+
+    <div class="mb-4">
+        <h3 class="font-semibold">Last Search:</h3>
+        <div v-if="lastSearch" class="flex items-center gap-2">
+            <span class="bg-gray-200 px-2 py-1 rounded text-sm">
+                {{ lastSearch.query }} ({{ lastSearch.type }})
+            </span>
+            <span class="text-sm text-gray-500">
+                Results: {{ searchResults.length }}
+            </span>
+        </div>
+        <div v-else class="text-gray-500">No searches yet</div>
+    </div>
+
+    <div v-if="searchResults.length" class="grid md:grid-cols-3 gap-4">
+        <div 
+            v-for="movie in searchResults" 
+            :key="movie.id" 
+            class="border p-4 rounded shadow"
+        >
+            <h2 class="font-bold">{{ movie.title }}</h2>
+            <p>Year: {{ movie.year }}</p>
+            <p>Genre: {{ movie.genre }}</p>
+            <p>Director: {{ movie.director }}</p>
+            <p>Rating: {{ movie.rating }}/10</p>
+        </div>
+    </div>
+
+    <div v-else-if="searched" class="text-gray-500">
+        No results found.
+    </div>
+</div>
+
+<script>
+const { createApp, ref } = Vue
+
+createApp({
+    setup() {
+        const searchQuery = ref('')
+        const searchType = ref('all')
+        const searchResults = ref([])
+        const searched = ref(false)
+        const lastSearch = ref(null)
+
+        // Expanded movie database
+        const movies = [
+            { id: 1, title: 'Inception', year: 2010, genre: 'Sci-Fi', director: 'Christopher Nolan', rating: 8.8 },
+            { id: 2, title: 'The Matrix', year: 1999, genre: 'Sci-Fi', director: 'Wachowski Sisters', rating: 8.7 },
+            { id: 3, title: 'Interstellar', year: 2014, genre: 'Sci-Fi', director: 'Christopher Nolan', rating: 8.6 },
+            { id: 4, title: 'Raiders of the Lost Ark', year: 1981, genre: 'Adventure', director: 'Steven Spielberg', rating: 8.4 },
+            { id: 5, title: 'Indiana Jones and the Temple of Doom', year: 1984, genre: 'Adventure', director: 'Steven Spielberg', rating: 7.6 },
+            { id: 6, title: 'Raiders of the Lost Treasure', year: 1986, genre: 'Adventure', director: 'John Doe', rating: 6.5 }
+        ]
+
+        const search = () => {
+            const trimmedQuery = searchQuery.value.trim().toLowerCase()
+            
+            // Record last search, even if no results
+            lastSearch.value = { 
+                query: searchQuery.value.trim(), 
+                type: searchType.value 
+            }
+
+            if (!trimmedQuery) {
+                searchResults.value = []
+                searched.value = false
+                return
+            }
+
+            searched.value = true
+            searchResults.value = movies.filter(movie => {
+                if (searchType.value === 'all') {
+                    // Search across all fields
+                    return (
+                        movie.title.toLowerCase().includes(trimmedQuery) ||
+                        movie.genre.toLowerCase().includes(trimmedQuery) ||
+                        movie.director.toLowerCase().includes(trimmedQuery)
+                    )
+                } else {
+                    // Specific field search
+                    return movie[searchType.value].toLowerCase().includes(trimmedQuery)
+                }
+            })
+        }
+
+        return {
+            searchQuery,
+            searchType,
+            searchResults,
+            searched,
+            lastSearch,
+            search
+        }
+    }
+}).mount('#app')
+</script>
+</body>
+</html>

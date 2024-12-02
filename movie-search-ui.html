@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Movie Search Agent</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div id="app" class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Movie Search Agent</h1>
+    
+    <div class="flex space-x-4 mb-4">
+        <input 
+            v-model="searchQuery" 
+            @keyup.enter="search"
+            placeholder="Search movies..." 
+            class="flex-grow p-2 border rounded"
+        >
+        <select v-model="searchYear" class="p-2 border rounded">
+            <option value="">Any Year</option>
+            <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+        </select>
+        <button 
+            @click="search" 
+            class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+            :disabled="isLoading || !searchQuery.trim()"
+        >
+            <span v-if="isLoading">Searching...</span>
+            <span v-else>Search</span>
+        </button>
+    </div>
+
+    <div v-if="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        {{ error }}
+    </div>
+
+    <div v-if="movies.length" class="grid md:grid-cols-3 gap-4">
+        <div 
+            v-for="movie in movies" 
+            :key="movie.id" 
+            class="border p-4 rounded shadow hover:shadow-lg transition-shadow"
+        >
+            <h2 class="font-bold text-lg">{{ movie.title }}</h2>
+            <p class="text-gray-600">{{ movie.year }}</p>
+            <p v-if="movie.director"><span class="font-semibold">Director:</span> {{ movie.director }}</p>
+            <p v-if="movie.rating !== null"><span class="font-semibold">Rating:</span> ⭐ {{ movie.rating }}</p>
+            <p v-if="movie.genres.length"><span class="font-semibold">Genres:</span> {{ movie.genres.join(', ') }}</p>
+            
+            <div v-if="movie.cast && movie.cast.length" class="mt-2">
+                <p class="font-semibold">Cast:</p>
+                <ul class="ml-4">
+                    <li 
+                        v-for="(castMember, index) in movie.cast.slice(0, 4)" 
+                        :key="index"
+                        class="text-sm"
+                    >
+                        {{ castMember.actor }}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div v-else-if="hasSearched" class="text-gray-500 text-center py-8">
+        No movies found. Try adjusting your search terms.
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    class MovieScraper {
+        async searchMovie(title, year = null) {
+            try {
+                let query = `site:imdb.com ${title}`;
+                if (year) {
+                    query += ` ${year}`;
+                }
+                query += " movie";
+
+                const searchResults = await window.brave_web_search({
+                    query: query,
+                    count: 5
+                });
+
+                if (!searchResults || !Array.isArray(searchResults)) {
+                    throw new Error('Invalid search results');
+                }
+
+                return searchResults
+                    .filter(result => 
+                        result.URL && 
+                        result.URL.includes('imdb.com/title/') &&
+                        !result.URL.includes('/fullcredits') &&
+                        !result.URL.includes('/mediaviewer')
+                    )
+                    .map(result => this.extractMovieData(result))
+                    .filter(Boolean);
+            } catch (error) {
+                console.error('Search error:', error);
+                throw new Error('Failed to search movies. Please try again.');
+            }
+        }
+
+        extractMovieData(result) {
+            try {
+                const titleMatch = result.Title.match(/(.*?)\((\d{4})\)/);
+                if (!titleMatch) return null;
+
+                const movieId = result.URL.match(/title\/(tt\d+)/)?.[1];
+                if (!movieId) return null;
+
+                const ratingMatch = result.Title.match(/[⭐★]\s*([0-9.]+)/);
+                const genreMatch = result.Title.match(/\|\s*(.*?)(?:\||$)/);
+                const directorMatch = result.Description.match(/Directed by ([^.]+)/);
+                const castMatch = result.Description.match(/With ([^.]+)/);
+
+                return {
+                    id: movieId,
+                    title: titleMatch[1].trim(),
+                    year: parseInt(titleMatch[2]),
+                    rating: ratingMatch ? parseFloat(ratingMatch[1]) : null,
+                    genres: genreMatch ? 
+                        genreMatch[1].split(',').map(g => g.trim()).filter(Boolean) : 
+                        [],
+                    director: directorMatch ? directorMatch[1].trim() : '',
+                    cast: castMatch ? 
+                        castMatch[1].split(',')
+                            .map(actor => ({
+                                actor: actor.replace(/\band\b/, '').trim()
+                            }))
+                            .filter(actor => actor.actor.length > 0) : 
+                        [],
+                    url: result.URL
+                };
+            } catch (error) {
+                console.error('Error extracting movie data:', error);
+                return null;
+            }
+        }
+    }
+
+    const app = Vue.createApp({
+        data() {
+            return {
+                searchQuery: '',
+                searchYear: '',
+                movies: [],
+                isLoading: false,
+                error: '',
+                hasSearched: false
+            }
+        },
+        computed: {
+            years() {
+                const currentYear = new Date().getFullYear();
+                const yearsList = [];
+                for (let year = currentYear; year >= currentYear - 100; year--) {
+                    yearsList.push(year);
+                }
+                return yearsList;
+            }
+        },
+        methods: {
+            async search() {
+                if (!this.searchQuery.trim()) return;
+
+                this.isLoading = true;
+                this.error = '';
+                this.hasSearched = true;
+
+                try {
+                    const scraper = new MovieScraper();
+                    const results = await scraper.searchMovie(
+                        this.searchQuery,
+                        this.searchYear || null
+                    );
+                    this.movies = results;
+                    
+                    if (results.length === 0) {
+                        this.error = 'No movies found. Try different search terms.';
+                    }
+                } catch (e) {
+                    console.error('Search error:', e);
+                    this.error = e.message;
+                    this.movies = [];
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+        }
+    });
+
+    app.mount('#app');
+});
+</script>
+</body>
+</html>
