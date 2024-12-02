@@ -154,17 +154,3 @@ class MovieScraper {
         return this.movies;
     }
 }
-
-// Test the implementation
-const testScraper = async () => {
-    const scraper = new MovieScraper();
-    try {
-        console.log('Searching for Inception...');
-        const results = await scraper.searchMovie('Inception', 2010);
-        console.log('Results with cast:', JSON.stringify(results, null, 2));
-    } catch (error) {
-        console.error('Test failed:', error);
-    }
-};
-
-testScraper();
