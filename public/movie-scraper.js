@@ -10,10 +10,12 @@ class MovieScraper {
 
     async braveSearch(searchQuery) {
         try {
-            const response = await fetch('https://api.search.brave.com/res/v1/web/search?' + new URLSearchParams({
+            const queryParams = new URLSearchParams({
                 q: searchQuery,
-                count: 5
-            }), {
+                count: '5'
+            }).toString();
+
+            const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${queryParams}`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -22,10 +24,15 @@ class MovieScraper {
             });
 
             if (!response.ok) {
-                throw new Error(`Brave Search API error: ${response.status} ${response.statusText}`);
+                const errorText = await response.text();
+                throw new Error(`Brave Search API error: ${response.status} ${errorText}`);
             }
 
             const data = await response.json();
+            if (!data.web || !data.web.results) {
+                console.error('Unexpected API response:', data);
+                throw new Error('Invalid API response format');
+            }
             return data.web.results;
         } catch (error) {
             console.error('Search failed:', error);
