@@ -1,0 +1,11 @@
+{
+  "name": "movie-search-tool",
+  "version": "1.0.0",
+  "description": "A tool to search and fetch movie information",
+  "scripts": {
+    "serve": "npx http-server public"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  }
+}
