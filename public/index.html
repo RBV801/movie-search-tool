@@ -1,1 +1,38 @@
-<antArtifact id="index.html"/>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Movie Search Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>Movie Search Tool</h1>
+    <movie-search-ui @search="searchMovies"></movie-search-ui>
+    <movie-search-agent :results="searchResults"></movie-search-agent>
+  </div>
+
+  <script src="movie-scraper.js"></script>
+  <script src="movie-search-ui.js"></script>
+  <script src="movie-search-agent.js"></script>  
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        searchResults: []  
+      },
+      methods: {
+        searchMovies(query) {
+          const scraper = new MovieScraper();
+          scraper.searchMovie(query)
+            .then(results => {
+              this.searchResults = results;
+            })
+            .catch(error => {
+              console.error('Error searching movies:', error);
+            });
+        }
+      }
+    });
+  </script>
+</body>
+</html>
