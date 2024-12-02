@@ -10,35 +10,48 @@
     .movie-list { margin-top: 20px; }
     .movie-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
     .cast-list { margin-top: 10px; }
+    .error { color: red; margin: 10px 0; }
   </style>
 </head>
 <body>
   <div id="app">
+    <div v-if="error" class="error">{{ error }}</div>
     <movie-search-ui @search="performSearch"></movie-search-ui>
     <movie-search-agent :results="searchResults"></movie-search-agent>
   </div>
 
-  <script src="../movie-scraper.js"></script>
+  <script src="config.js"></script>
+  <script src="movie-scraper.js"></script>
   <script src="movie-search-ui.js"></script>
   <script src="movie-search-agent.js"></script>
   <script>
     // Initialize the movie scraper
-    const scraper = new MovieScraper();
+    let scraper;
+    try {
+      scraper = new MovieScraper();
+    } catch (error) {
+      console.error('Failed to initialize MovieScraper:', error);
+    }
 
     new Vue({
       el: '#app',
       data: {
-        searchResults: []
+        searchResults: [],
+        error: ''
       },
       methods: {
         async performSearch(query) {
+          this.error = '';
           try {
+            if (!scraper) {
+              throw new Error('Movie scraper not initialized. Please check your configuration.');
+            }
             console.log('Searching for:', query);
             const results = await scraper.searchMovie(query);
             this.searchResults = results;
           } catch (error) {
             console.error('Search failed:', error);
-            alert('Search failed. Please try again.');
+            this.error = `Search failed: ${error.message}`;
           }
         }
       }

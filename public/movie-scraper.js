@@ -2,23 +2,31 @@ class MovieScraper {
     constructor() {
         this.movies = [];
         this.searchHistory = [];
+        if (!window.config || !window.config.BRAVE_API_KEY) {
+            throw new Error('Brave API key not found. Please set up config.js with your API key.');
+        }
+        this.apiKey = window.config.BRAVE_API_KEY;
     }
 
     async braveSearch(searchQuery) {
         try {
-            const response = await fetch('https://api.search.brave.com/res/v1/web/search', {
+            const response = await fetch('https://api.search.brave.com/res/v1/web/search?' + new URLSearchParams({
+                q: searchQuery,
+                count: 5
+            }), {
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json'
-                },
-                params: {
-                    q: searchQuery,
-                    count: 5
+                    'Accept': 'application/json',
+                    'X-Subscription-Token': this.apiKey
                 }
             });
 
+            if (!response.ok) {
+                throw new Error(`Brave Search API error: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
-            return this.parseSearchResults(data);
+            return data.web.results;
         } catch (error) {
             console.error('Search failed:', error);
             throw error;
@@ -37,10 +45,10 @@ class MovieScraper {
 
         // Look for cast entries in the description
         const castEntries = results
-            .filter(result => result.URL.includes('/fullcredits'))
+            .filter(result => result.url.includes('/fullcredits'))
             .map(result => {
                 const castList = [];
-                const castLines = result.Description.split('\n');
+                const castLines = result.description.split('\n');
                 
                 castLines.forEach(line => {
                     const castMatch = line.match(/(.*?)\s+as\s+(.*?)(?:\.|$)/i);
@@ -62,26 +70,26 @@ class MovieScraper {
 
     async extractMovieData(result) {
         // Parse title and year
-        const titleMatch = result.Title.match(/^(.*?)\((\d{4})\)/);
+        const titleMatch = result.title.match(/^(.*?)\((\d{4})\)/);
         if (!titleMatch) return null;
 
         // Parse rating
-        const ratingMatch = result.Title.match(/⭐\s*([0-9.]+)/);
+        const ratingMatch = result.title.match(/⭐\s*([0-9.]+)/);
         
         // Parse genres
-        const genreMatch = result.Title.match(/\|(.*?)$/);
+        const genreMatch = result.title.match(/\|(.*?)$/);
         
         // Parse director
-        const directorMatch = result.Description.match(/Directed by ([^.]+)/);
+        const directorMatch = result.description.match(/Directed by ([^.]+)/);
 
         // Extract movie ID from URL
-        const movieId = result.URL.match(/title\/(tt\d+)/)?.[1];
+        const movieId = result.url.match(/title\/(tt\d+)/)?.[1];
 
         // Get detailed cast information if we have a movie ID
         const castDetails = movieId ? await this.getCastDetails(movieId) : [];
 
         // Parse basic cast from description as fallback
-        const basicCastMatch = result.Description.match(/With ([^.]+)/);
+        const basicCastMatch = result.description.match(/With ([^.]+)/);
         const basicCast = basicCastMatch ? 
             basicCastMatch[1].split(',')
                 .map(actor => ({
@@ -104,8 +112,8 @@ class MovieScraper {
                 [],
             director: directorMatch ? directorMatch[1].trim() : '',
             cast: cast,
-            url: result.URL,
-            description: result.Description,
+            url: result.url,
+            description: result.description,
             lastUpdated: new Date()
         };
     }
