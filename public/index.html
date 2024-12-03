@@ -1,75 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Movie Search Agent</title>
-    <!-- Define config before any scripts load -->
-    <script>
-        const config = {
-            BRAVE_API_KEY: 'BSAni5k7ojaS199mdypVffM3ElVrC61'
-        };
-        console.log('Config initialized:', config);
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
-        input { padding: 8px; margin-right: 10px; width: 300px; }
-        button { padding: 8px 16px; background: #4CAF50; color: white; border: none; cursor: pointer; }
-        button:hover { background: #45a049; }
-        .movie-list { margin-top: 20px; }
-        .movie-item { margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
-        .cast-list { margin-top: 10px; }
-        .error { color: red; margin: 10px 0; padding: 10px; background: #ffebee; border-radius: 4px; }
-    </style>
+  <title>Movie Search Tool</title>
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
 </head>
 <body>
-    <div id="app" class="container">
-        <h1>Movie Search Tool</h1>
-        <div v-if="error" class="error">{{ error }}</div>
-        <movie-search-ui @search="performSearch"></movie-search-ui>
-        <movie-search-agent :results="searchResults"></movie-search-agent>
-    </div>
+  <div id="app">
+    <h1>Movie Search Tool</h1>
+    <movie-search-ui @search="searchMovies"></movie-search-ui>
+    <movie-search-agent :results="searchResults"></movie-search-agent>
+  </div>
 
-    <!-- Load scripts in specific order -->
-    <script src="movie-scraper.js"></script>
-    <script src="movie-search-ui.js"></script>
-    <script src="movie-search-agent.js"></script>
-    <script>
-        // Initialize the movie scraper
-        let scraper;
-        try {
-            console.log('Creating MovieScraper instance...');
-            scraper = new MovieScraper();
-            console.log('MovieScraper initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize MovieScraper:', error);
+  <script src="movie-scraper.js"></script>
+  <script src="movie-search-ui.js"></script>
+  <script src="movie-search-agent.js"></script>
+  <script>
+    new Vue({
+      el: '#app',
+      data: {
+        searchResults: []
+      },
+      methods: {
+        searchMovies(query) {
+          const scraper = new MovieScraper();
+          scraper.searchMovie(query)
+            .then(results => {
+              this.searchResults = results;
+            })
+            .catch(error => {
+              console.error('Error searching movies:', error);
+            });
         }
-
-        new Vue({
-            el: '#app',
-            data: {
-                searchResults: [],
-                error: ''
-            },
-            methods: {
-                async performSearch(query) {
-                    this.error = '';
-                    try {
-                        if (!scraper) {
-                            throw new Error('Movie scraper not initialized. Please check your configuration.');
-                        }
-                        console.log('Searching for:', query);
-                        const results = await scraper.searchMovie(query);
-                        console.log('Search results:', results);
-                        this.searchResults = results;
-                    } catch (error) {
-                        console.error('Search failed:', error);
-                        this.error = `Search failed: ${error.message}`;
-                    }
-                }
-            }
-        });
-    </script>
+      }
+    });
+  </script>
 </body>
 </html>
