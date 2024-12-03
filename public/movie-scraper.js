@@ -2,10 +2,15 @@ class MovieScraper {
     constructor() {
         this.movies = [];
         this.searchHistory = [];
-        if (!window.config || !window.config.BRAVE_API_KEY) {
+        console.log('Initializing MovieScraper with config:', window.config); // Debug log
+        if (typeof config === 'undefined') {
             throw new Error('Brave API key not found. Please set up config.js with your API key.');
         }
-        this.apiKey = window.config.BRAVE_API_KEY;
+        if (!config.BRAVE_API_KEY) {
+            throw new Error('BRAVE_API_KEY not found in config.');
+        }
+        this.apiKey = config.BRAVE_API_KEY;
+        console.log('MovieScraper initialized successfully with API key:', this.apiKey.substring(0, 5) + '...'); // Debug log
     }
 
     async braveSearch(searchQuery) {
@@ -14,6 +19,8 @@ class MovieScraper {
                 q: searchQuery,
                 count: '5'
             }).toString();
+
+            console.log('Making API request with params:', queryParams); // Debug log
 
             const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${queryParams}`, {
                 method: 'GET',
@@ -25,10 +32,13 @@ class MovieScraper {
 
             if (!response.ok) {
                 const errorText = await response.text();
+                console.error('API Response not OK:', response.status, errorText); // Debug log
                 throw new Error(`Brave Search API error: ${response.status} ${errorText}`);
             }
 
             const data = await response.json();
+            console.log('API Response:', data); // Debug log
+
             if (!data.web || !data.web.results) {
                 console.error('Unexpected API response:', data);
                 throw new Error('Invalid API response format');
