@@ -1,54 +1,63 @@
 class MovieScraper {
-    constructor() {
-        this.movies = [];
-        this.searchHistory = [];
-        console.log('Initializing MovieScraper with config:', window.config); // Debug log
-        if (typeof config === 'undefined') {
-            throw new Error('Brave API key not found. Please set up config.js with your API key.');
-        }
-        if (!config.BRAVE_API_KEY) {
-            throw new Error('BRAVE_API_KEY not found in config.');
-        }
-        this.apiKey = config.BRAVE_API_KEY;
-        console.log('MovieScraper initialized successfully with API key:', this.apiKey.substring(0, 5) + '...'); // Debug log
+  constructor() {
+    this.movies = [];
+    this.searchHistory = [];
+    console.log('Initializing MovieScraper with config:', window.config); // Debug log
+    if (typeof config === 'undefined') {
+      throw new Error('Brave API key not found. Please set up config.js with your API key.');
     }
-
-    async braveSearch(searchQuery) {
-        try {
-            const queryParams = new URLSearchParams({
-                q: searchQuery,
-                count: '5'
-            }).toString();
-
-            console.log('Making API request with params:', queryParams); // Debug log
-
-            const response = await fetch(`https://api.search.brave.com/res/v1/web/search?${queryParams}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Subscription-Token': this.apiKey
-                }
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('API Response not OK:', response.status, errorText); // Debug log
-                throw new Error(`Brave Search API error: ${response.status} ${errorText}`);
-            }
-
-            const data = await response.json();
-            console.log('API Response:', data); // Debug log
-
-            if (!data.web || !data.web.results) {
-                console.error('Unexpected API response:', data);
-                throw new Error('Invalid API response format');
-            }
-            return data.web.results;
-        } catch (error) {
-            console.error('Search failed:', error);
-            throw error;
-        }
+    if (!config.BRAVE_API_KEY) {
+      throw new Error('BRAVE_API_KEY not found in config.');
     }
+    this.apiKey = config.BRAVE_API_KEY;
+    console.log('MovieScraper initialized successfully with API key:', this.apiKey.substring(0, 5) + '...'); // Debug log
+  }
+
+  async braveSearch(searchQuery) {
+    try {
+      this.isLoading = true;
+      this.error = null;
+
+      const queryParams = new URLSearchParams({
+        q: searchQuery,
+        count: '5'
+      }).toString();
+
+      console.log('Making API request with params:', queryParams); // Debug log
+
+      const response = await fetch(`http://localhost:3001/search?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Response not OK:', response.status, errorText); // Debug log
+        throw new Error(`Brave Search API error: ${response.status} ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data); // Debug log
+
+      if (!data.web || !data.web.results) {
+        console.error('Unexpected API response:', data);
+        throw new Error('Invalid API response format');
+      }
+      return data.web.results;
+    } catch (error) {
+      console.error('Search failed:', error);
+      this.error = error.message;
+      throw error;
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  // The rest of the MovieScraper class methods remain the same
+  // ...
+}
 
     async getCastDetails(movieId) {
         // Search specifically for cast information
