@@ -24,7 +24,13 @@
         <movie-search-agent :results="searchResults"></movie-search-agent>
     </div>
 
-    <script src="config.js"></script>
+    <!-- Load scripts in specific order -->
+    <script type="text/javascript">
+        // Define config globally first
+        const config = {
+            BRAVE_API_KEY: 'BSAni5k7ojaS199mdypVffM3ElVrC61'
+        };
+    </script>
     <script src="movie-scraper.js"></script>
     <script src="movie-search-ui.js"></script>
     <script src="movie-search-agent.js"></script>
@@ -33,6 +39,8 @@
         let scraper;
         try {
             scraper = new MovieScraper();
+            console.log('MovieScraper initialized successfully');
+            console.log('Config:', config); // Debug output
         } catch (error) {
             console.error('Failed to initialize MovieScraper:', error);
         }
